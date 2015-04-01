@@ -1,0 +1,55 @@
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<html>
+   <head> 
+      <title>Perceptual Hash</title> 
+	  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>	
+	  <script src="js/phash.js"></script>
+	  <style type="text/css">
+         #output {
+            position:absolute;
+            width:1000px;
+         }
+         .pixel {
+            float:left;
+            width:10px;
+            height:10px;
+         }
+      </style>
+   </head>
+   <body>
+       
+      <div id="output"></div>
+     
+      <script type="text/javascript">
+	
+	     debug = true;
+	  
+	     /**
+          * Draw Image
+          ** @param {array} samples
+	     */
+         var output = function(samples) {
+	  	        		 		 
+            for (var x = 0; x < samples.length; x++) 
+	        {
+               for (var y = 0; y < samples[x].length; y++) 
+		       {			   
+                  var color = samples[x][y].red + ',' + samples[x][y].green + ',' + samples[x][y].blue + ',1';			   			                  			                     				                    				  
+			      $('#output').append('<div class="pixel p' + x + '-' + y + '" style="background-color:rgba(' + color + ');"></div>');	           
+               }
+            }
+         };
+	  	  
+	     $(document).ready(function()
+	     {	            		 
+            preloadImage("img/lily.jpg");			 
+            preloadImage("img/samosa.jpg");			 
+            preloadImage("img/image.jpg");				 
+            preloadImage("img/Alyson_Hannigan_200512.jpg"); 
+            preloadImage("img/sillycat.jpg");
+            preloadImage("img/Aeon_c9.jpg");            
+	     });
+	  
+      </script>	
+   </body>
+</html>

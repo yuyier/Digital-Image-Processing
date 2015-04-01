@@ -1,0 +1,58 @@
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<html>
+   <head> 
+      <title>Image sampler</title> 
+	  <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>	
+	  <script src="js/imagesampler.js"></script>
+	  <style type="text/css">
+         #output {
+            position:absolute;
+            width:500px;
+         }
+         .pixel {
+            float:left;
+            width:10px;
+            height:10px;
+         }
+      </style>
+   </head>
+   <body>
+       
+      <div id="output"></div>
+     
+      <script type="text/javascript">
+	
+	     debug = true;
+	  
+	     /**
+          * Draw Image
+          ** @param {array} samples
+	     */
+         var output = function(samples) {
+	  	        		 		 
+            for (var x = 0; x < samples.length; x++) 
+	        {
+               for (var y = 0; y < samples[x].length; y++) 
+		       {			   
+                  var color = samples[x][y].red + ',' + samples[x][y].green + ',' + samples[x][y].blue + ',1';			   			                  			                     				                    				  
+			      $('#output').append('<div class="pixel p' + x + '-' + y + '" style="background-color:rgba(' + color + ');"></div>');	           
+               }
+            }
+         };
+	  	  
+	     $(document).ready(function()
+	     {	 
+             var defaults = {
+                rows: 50,     // the number of horizontal samples, sampled rows
+                columns: 50,  // the number of vertical samples, sampled columns
+                accuracy: 5, // sample every accuracy'th pixel for better performance
+                bleed: 5,    // distance to image border to avoid faulty analysing
+                async: true  // execute asynchronous to avoid blocking the application(Future use)
+             }; 
+			 
+             preloadImage("img/lily.jpg", defaults);	 			              
+	     });
+	  
+      </script>	
+   </body>
+</html>
