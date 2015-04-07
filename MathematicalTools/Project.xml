@@ -1,0 +1,58 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <!-- <ProjectGuid>{BCB63EA9-F492-446C-9C6B-AEF1D0F9886E}</ProjectGuid> -->
+    <OutputType>Exe</OutputType>
+    <!-- <AppDesignerFolder>Properties</AppDesignerFolder> -->
+    <RootNamespace>life.image.processing</RootNamespace>
+    <AssemblyName>LIP</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <!-- <FileAlignment>512</FileAlignment> -->
+    <!-- <Unsafe>true</Unsafe> -->
+  </PropertyGroup>
+  
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
+    <PlatformTarget>x64</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <!-- For /unsafe compiler option -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <Compile Include="src\Program.cs" />	
+  </ItemGroup>
+  
+  <ItemGroup>
+    <!-- File for Assemblies we depend on -->
+    <Reference Include="System" />
+	<ProjectReference Include="src\CLI\Project.xml">
+      <Project>{16CD7635-7CF4-4C62-A77B-CF87D0F09A58}</Project> 
+      <Name>life.image.processing</Name>
+    </ProjectReference>
+  </ItemGroup>
+  
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  
+  <Target Name="CopyLinkedContentFiles" AfterTargets="Build">
+    <Copy SourceFiles="$(OutputPath)\$(AssemblyName).$(OutputType)" 
+          DestinationFolder=".\" 
+          SkipUnchangedFiles='true' 
+          OverwriteReadOnlyFiles='true' />
+  </Target>
+  
+  <Target Name="Clean">
+    <RemoveDir Directories="bin;obj;src\dll\obj" />
+	<Delete Files="LIP.exe;life.image.processing.dll;life.image.processingCLI.dll;src\dll\life.image.processing.dll;src\dll\life.image.processing.pdb" />
+  </Target>	
+   
+</Project>
