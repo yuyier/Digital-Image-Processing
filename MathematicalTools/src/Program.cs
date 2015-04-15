@@ -1,4 +1,4 @@
-// src/main.cs
+// src/Program.cs
 // Written by, Sohail Qayum Malik[sqm@hackers.pk]
 
 using System;
