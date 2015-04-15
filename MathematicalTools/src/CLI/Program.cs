@@ -2,12 +2,23 @@
 // Written by, Sohail Qayum Malik[sqm@hackers.pk]
 
 using System;
-using System.Windows.Media.Imaging;
 
 namespace life.image.processing
-{	
+{ 	
     public class CLI /* Command Line */
-    {	 	
+    {
+	   public enum Type
+       {
+          /// <summary>
+          /// The application executed successfully.
+          /// </summary>
+          Help,
+          /// <summary>
+          /// There was a syntax error in a command line argument.
+          /// </summary>
+          Version,
+       } 
+	
 	   public delegate bool del(string arg);
 	   
 	   public CLI(ref String[] arguments)	   
@@ -36,10 +47,7 @@ namespace life.image.processing
 			  tryParseOption(arguments[i]); 
 			  i++;
 			  argc--; 
-		  }
-		  
-		  Uri uri = new Uri("Assets\\current.tif", UriKind.RelativeOrAbsolute);				
-		  TiffBitmapDecoder decoder = new TiffBitmapDecoder(uri, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
+		  }		  		  
 	   }	   		   	   
     }
 }

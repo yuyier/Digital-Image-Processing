@@ -14,12 +14,11 @@ namespace life.image.processing
 			String[] arguments = Environment.GetCommandLineArgs();
 						
 			CLI obj = new CLI(ref arguments);
-            Uri uri = new Uri("Assets\\current.tif", UriKind.RelativeOrAbsolute);	
 			
-			//TiffBitmapDecoder decoder = new TiffBitmapDecoder(uri, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
-
-            Console.WriteLine(uri);			
-												
+			CLI.Type h = CLI.Type.Help;
+			
+			TIFF t = new TIFF("Assets\\current.tif");
+            															
 			return ret;
 		}
 	}
