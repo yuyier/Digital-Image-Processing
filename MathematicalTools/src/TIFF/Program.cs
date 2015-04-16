@@ -2,18 +2,38 @@
 // Written by, Sohail Qayum Malik[sqm@hackers.pk]
 
 using System;
+using System.Windows.Markup;
 using System.Windows.Media.Imaging;
 
 namespace life.image.processing
 {	
-    public class TIFF /* Decoder for TIFF */
-    {	 		   
+    public sealed class TIFF : IMG /* Decoder for TIFF */
+    {
+
+	   TiffBitmapDecoder decoder;
+	
 	   public TIFF(string path)	   
 	   {  	   
 	   	   Uri uri = new Uri(path, UriKind.RelativeOrAbsolute);				
-		   TiffBitmapDecoder decoder = new TiffBitmapDecoder(uri, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
+		   decoder = new TiffBitmapDecoder(uri, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.Default);
 		   
-           Console.WriteLine(uri); 		   
-	   }	   		   	   
+		   //BitmapSource bitmapSource = decoder.Frames[0];
+		   
+           //Console.WriteLine(decoder.GetType().ToString()); 		   
+		   
+           //Console.WriteLine(uri); 		   
+	   }
+
+	   public override int PixelWidth()
+	   {
+		   BitmapSource bitmapSource = decoder.Frames[0];
+	       return bitmapSource.PixelWidth;
+	   }
+	   
+	   public override int PixelHeight()
+	   {
+		   BitmapSource bitmapSource = decoder.Frames[0];
+	       return bitmapSource.PixelHeight;		   
+	   }	   	   
     }
 }

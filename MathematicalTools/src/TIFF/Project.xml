@@ -33,13 +33,18 @@
   
   <ItemGroup>
     <!-- File for Assemblies we depend on -->
-     <Reference Include="System" />	 
+     <Reference Include="System" />
+	 <ProjectReference Include="..\IMG\Project.xml">
+        <Project>{DBCD0744-E439-4153-9A6E-8825EBA306C3}</Project> 
+        <Name>life.image.processing</Name>
+     </ProjectReference>	 
      <Reference Include="System.Windows.Media.Imaging">	 
 	    <HintPath>C:\Windows\Microsoft.NET\assembly\GAC_64\PresentationCore\v4.0_4.0.0.0__31bf3856ad364e35\PresentationCore.dll</HintPath>	
 	 </Reference>
 	 <Reference Include="System.Windows.Threading">
 	    <HintPath>C:\Windows\Microsoft.NET\Framework64\v4.0.30319\WPF\WindowsBase.dll</HintPath>
 	 </Reference>
+	 <Reference Include="System.Xaml" /> 
   </ItemGroup>	
   
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

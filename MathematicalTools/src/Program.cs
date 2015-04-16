@@ -9,16 +9,15 @@ namespace life.image.processing
 	{
 		public static int Main()
 		{
-			int ret = 0;
+			int ret = 0;			
+			String[] arguments = Environment.GetCommandLineArgs();						
+			CLI cli = new CLI(ref arguments);
 			
-			String[] arguments = Environment.GetCommandLineArgs();
-						
-			CLI obj = new CLI(ref arguments);
-			
-			CLI.Type h = CLI.Type.Help;
-			
-			TIFF t = new TIFF("Assets\\current.tif");
-            															
+            if (cli.CommonArgc > 1) 
+			{
+ 				IMG img = new TIFF(arguments[1]); // Like Assets\current.tif
+			}				
+									                         			
 			return ret;
 		}
 	}

@@ -6,7 +6,7 @@ using System;
 namespace life.image.processing
 { 	
     /* TODO, should be able to process multiple instances of same CL option */
-    public class CLI /* Command Line */
+    public sealed class CLI /* Command Line */
     {
 	    public enum Type
         {
@@ -35,7 +35,9 @@ namespace life.image.processing
 		   new args{name = "/-h", description = "It displays the help screen", type = Type.Help, index = 0, argc = 0},
 		   new args{name = "/_v", description = "It displays the version number", type = Type.Version, index = 0, argc = 0},
 		   new args{name = "/-v", description = "It displays the version number", type = Type.Version, index = 0, argc = 0},
-	    }; 
+	    };
+
+        int commonArgc;		
 		   	
 	    public delegate bool del(string arg, args token);
 	   
@@ -53,13 +55,24 @@ namespace life.image.processing
 			  
 			   return ret;   
 	       };
+		   
+		   commonArgc = 0;
           
            for (int i = 0; i < tokens.Length; i++) 
 		   {
 			   for (int j = 0; j < arguments.Length; j++)
 			   {
 				   if (tryParseOption(arguments[j], tokens[i])) 
-				   {
+				   {					   
+					   if (commonArgc == 0)
+					   {
+						   commonArgc = j;
+					   }
+					   else if (j < commonArgc)
+					   {
+						   commonArgc = j;
+					   }
+					   
 				       tokens[i].index = j;  				   
                        int k = 0;
 				       bool flag = false;
@@ -85,6 +98,11 @@ namespace life.image.processing
 				   }
 			   }				 
 		   }
+		   
+		   if (commonArgc == 0)
+		   {
+			   commonArgc = argc; 
+		   }
 		  
 		   /*for (int i = 0; i < tokens.Length; i++)
 		   {
@@ -96,6 +114,11 @@ namespace life.image.processing
                    Console.WriteLine(tokens[i].argc);
 			   }				 
 		   }*/		    		  
-	    }	   		   	   
+	    }
+
+        public int CommonArgc 
+		{
+	        get {return commonArgc;}		
+		} 		
     }
 }

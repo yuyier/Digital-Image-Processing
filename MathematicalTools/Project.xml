@@ -43,6 +43,9 @@
       <Project>{EC5BCE06-2505-4601-8CAA-A5AE72285C61}</Project> 
       <Name>life.image.processing</Name>
     </ProjectReference>
+	<Reference Include="life.image.processing.IMG">	 
+	  <HintPath>life.image.processingIMG.dll</HintPath>	
+	</Reference>
   </ItemGroup>
   
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
@@ -56,7 +59,7 @@
   
   <Target Name="Clean">
     <RemoveDir Directories="bin;obj;src\dll\obj" />
-	<Delete Files="LIP.exe;life.image.processing.dll;life.image.processingCLI.dll;life.image.processingTIFF.dll;src\dll\life.image.processing.dll;src\dll\life.image.processing.pdb" />
+	<Delete Files="LIP.exe;life.image.processing.dll;life.image.processingCLI.dll;life.image.processingTIFF.dll;life.image.processingIMG.dll;src\dll\life.image.processing.dll;src\dll\life.image.processing.pdb" />
   </Target>	
    
 </Project>
