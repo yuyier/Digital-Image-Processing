@@ -1,6 +1,9 @@
 ﻿// src/CLI/Program.cs
 // Written by, Sohail Qayum Malik[sqm@hackers.pk]
 
+// Indexers...
+// https://msdn.microsoft.com/en-us/library/6x16t2tx.aspx
+
 using System;
 
 namespace life.image.processing
@@ -18,6 +21,10 @@ namespace life.image.processing
            /// It displays the version number.
            /// </summary>
            Version,
+           /// <summary>
+           /// It adds two or more pictures together.
+           /// </summary>		   
+		   Add,
         }
 	   
 	    public struct args
@@ -35,12 +42,30 @@ namespace life.image.processing
 		   new args{name = "/-h", description = "It displays the help screen", type = Type.Help, index = 0, argc = 0},
 		   new args{name = "/_v", description = "It displays the version number", type = Type.Version, index = 0, argc = 0},
 		   new args{name = "/-v", description = "It displays the version number", type = Type.Version, index = 0, argc = 0},
+           new args{name = "/_a", description = "Adds two or more pictures together", type = Type.Add, index = 0, argc = 0}, 
+           new args{name = "/-a", description = "Adds two or more pictures together", type = Type.Add, index = 0, argc = 0},		   
 	    };
 
         int commonArgc;		
 		   	
 	    public delegate bool del(string arg, args token);
-	   
+		
+		public bool this[Type t]
+		{						
+			get
+			{				
+			    for (int i = 0; i < tokens.Length; i++)
+		        {
+			        if (tokens[i].index > 0 && tokens[i].type == t)
+			        {
+                        return true;
+			        }				 
+		        }
+
+                return false;				
+			}
+		}
+		
 	    public CLI(ref String[] arguments)	   
 	    {  
            int argc = arguments.Length;	   
