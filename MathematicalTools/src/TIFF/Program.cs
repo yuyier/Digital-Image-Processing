@@ -10,6 +10,18 @@ using System.Windows.Media.Imaging;
 // https://msdn.microsoft.com/en-us/library/system.windows.media.imaging.bitmapdecoder(v=vs.110).aspx
 // https://msdn.microsoft.com/en-us/library/system.drawing.image(v=vs.110).aspx
 // https://msdn.microsoft.com/en-us/library/aa969817(v=vs.110).aspx
+/*
+Stride... it's pixel size in bytes 
+-------------------------------------
+You can use stride = pixel_size * image_width value. For example, for RGBA bitmap with 100 pixel width, stride = 400.
+Some applications may require special line alignment. For example, Windows GDI bitmaps require 32-bits line alignment. In this case, for RGB bitmap with width = 33, stride value 33*3=99 should be changed to 100, to have 32-bits line alignment in destination array.
+Generally, you should know destination array requirements. In there are no special requirements, use default pixel_size * image_width.
+
+Yes, this is pixel size in bytes. 
+BitmapSource.Format property returns PixelFormat structure. 
+For example, pixel size for Bgr32 is 4, for Bgr24 - 3, for Gray8 - 1 etc. 
+Copying bitmap data to array, you need to know exactly resulting array structure, and it is defined by Format property.
+*/
 namespace life.image.processing
 {	
     public sealed class TIFF : IMG /* Decoder for TIFF */
@@ -48,7 +60,7 @@ namespace life.image.processing
 		   // You need .NET 4.5 or later
 		   //WritableBitmap wbitmap = new WritableBitmap(bmsA);
 		   
-		   Console.WriteLine(BitmapPalettes.Gray256);
+		   //Console.WriteLine(BitmapPalettes.Gray256);
 
 		   /*
 		       When width less than zero take the width of imgA else take the width of imgB
@@ -74,15 +86,33 @@ namespace life.image.processing
 		   
 		   byte[] imgApixels = new byte[width*height];
 		   byte[] imgBpixels = new byte[width*height];
-		   bmsA.CopyPixels(imgApixels, width*height, 0);
-		   bmsB.CopyPixels(imgBpixels, width*height, 0);
+		   //Console.WriteLine(width*height);
+		   bmsA.CopyPixels(imgApixels, /*width*height*/ width, 0);
+		   bmsB.CopyPixels(imgBpixels, /*width*height*/ width, 0);		   		   
 		   
-		   Console.WriteLine(BitmapPalettes.Gray256);
+		   for (int foo = 0; foo < height; foo++) 
+		   {
+			   for (int bar = 0; bar < width; bar++) 
+			   {
+				   if ((bar % 2) == 0)
+				   {
+			           imgApixels[foo*width + bar] = 0xff;
+				   }
+			   }
+		   }
+		   		   		   
+		   //Console.WriteLine(bmsA.Format);
+		   
+		   //Console.WriteLine(BitmapPalettes.Gray256);
 		  
            /* Things are not working here.... It is bmsA.Palette which is causing all the problems... */	
            /* Uncomment the following statement and then run it... */
            /* E:\Image-Processing>LIP.Exe Assets\Current.tif Assets\Current.tif /_a */		  
-		   // BitmapSource image = BitmapSource.Create(width, height, bmsA.DpiX, bmsA.DpiY, bmsA.Format, bmsA.Palette, imgApixels, width);
+		   BitmapSource image = BitmapSource.Create(width, height, bmsA.DpiX, bmsA.DpiY, bmsA.Format, bmsA.Palette, imgApixels, width);
+		   FileStream stream = new FileStream("new.tif", FileMode.Create);
+		   TiffBitmapEncoder encoder = new TiffBitmapEncoder();
+		   encoder.Frames.Add(BitmapFrame.Create(image));
+		   encoder.Save(stream);
 		   
 		   /*
 		   http://stackoverflow.com/questions/25755800/draw-a-colour-bitmap-as-greyscale-in-wpf
