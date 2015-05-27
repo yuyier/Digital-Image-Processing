@@ -1,0 +1,44 @@
+<!-- https://software.intel.com/en-us/blogs/2015/05/06/top-10-intel-software-developer-stories?utm_source=Twitter.com&utm_medium=Social+Media&utm_campaign=AllZones_ASMO_May2015_TopTrendingContentBlog -->
+<html>
+    <head>
+        <title> Image Averaging </title>  
+    </head>
+	
+	<body>
+	</body>
+	
+	<p>
+	    <h3>Image Averaging and Noise Removal</h3>
+	</p>
+	<p>
+	    Image averaging is a digital image processing technique that is often employed to enhance video images that have been corrupted by random noise. The algorithm operates by computing an average or arithmetic mean of the intensity values for each pixel position in a set of captured images from the same scene or view-field. Each corrupted image has a stable signal component and a random noise component. In the averaging process, the signal component of the image remains the same, but the noise component differs from one image frame to another. Because the noise is random, it tends to cancel during the summation. When the averaged image is computed, the image signal component has a stronger influence over the summation than does the noise component. The result is an enhanced signal component, while the noise component tends to be reduced by a factor approximately equal to the square root of the number of images averaged.
+	</p>
+	<p>
+	    <img src="equation1.gif" alt="Equation 1"> 
+	</p>
+	<p>
+	    Where the sum is taken over <b>I(i, x, y)</b>, which is the pixel intensity value of the <b>i</b>th frame from the <b>N</b> set of image frames.
+	</p>
+	<p>
+	    At every pair of coordinates <b>(x, y)</b> the noise is un-correlated(in any two frames, at coordinate <b>(x, y)</b> the value of noise increases or decreases mutually-exclusively) and has zero-average.
+	</p>
+	<p>
+	    At all <b>(x,y)</b> coordinates of <b>N</b> noisy frames our variance is 1&frasl;N&nbsp;&bullet;&nbsp;&sigma;<sup>2</sup>&nbsp;<b>I(N, x, y)</b>. This is also the value of the variance at any point(any coordinate <b>(x,y)</b>) of our averaged image i.e &sigma;<sup>2</sup><b>A(N,x,y)</b>&nbsp;&equals;&nbsp;1&frasl;N&nbsp;&bullet;&nbsp;&sigma;<sup>2</sup>&nbsp;<b>I(N, x, y)</b>. This indicates that our expectation is that by averaging <b>N</b> many noisy images at coordinate <b>(x, y)</b> we'll get a pixel value which is relatively less noisy. 
+	    <!-- Our expectation is that by averaging <b>N</b> many noisy images at coordinate <b>(x, y)</b> we'll get a pixel value which is relatively less noisy. &sigma;<sup>2</sup><b>A(N,x,y)</b>&nbsp;&equals;&nbsp;&sigma;<sup>2</sup>1&frasl;N&nbsp;&bullet;&nbsp;<b>I(i, x, y)</b> -->
+	</p>
+	<p>
+	    When utilized in the processing of video images, the image averaging technique improves image spatial resolution (visual quality) at the cost of temporal resolution (a decrease in the number of image frames that can be displayed per second).
+	</p>
+	<p>
+	    References...
+	</p>
+	<p>
+	    <ul>
+            <li><a href="http://micro.magnet.fsu.edu/primer/java/digitalimaging/processing/imageaveraging/">Image Averaging and Noise Removal</a></li>
+            <li><a href="https://books.google.co.in/books/about/Digital_Image_Processing.html?id=a62xQ2r_f8wC">Digital Image Processing by, Rafael C. Gonzalez and Richard E. Woods</a></li>            
+        </ul>  
+	</p>
+	
+	
+	
+</html>
