@@ -1,0 +1,20 @@
+<html>
+<head><title>Histogram Equalization</title></head>
+<body>
+<p><b>Histogram Equalization</b></p>
+<p>The basic idea is to make less gray pixels even less grayer. Here the assumption is that we've already constructed the histogram of the picture with the dark pixels and the histogram is represented as a function "<b>H</b>" which is a function of "<b>a</b>"(where "<b>a</b>" is any pixel-value, and <b>H(a)</b> would return the number of times that pixel-value has appeared at an arbitrary (row,column) coordinates in the darker picture). </p>
+<p>Lets assign the total number of pixels in a darker picture to a variable called "<b>Area</b>"(<b>Area</b> = columns*rows). Lets further suppose that pixel-value is our random variable. The probability function of this random variable is... <img src="equation2.png" alt="Equation 2" /> and, the probability distribution function is... <img src="equation3.png" alt="Equation 3" />. Our histogram equalization function then would be... <img src="Equation4.png" alt="Equation 4" />. The <img src="dm.png" alt="dm" /> is the gray-level for the new image. Each pixel of our new picture will have this pixel-value as such that <img src="Equation6.png" alt="Equation 6" /> and hence the probability function of the pixel values in new image will be... <img src="Equation7.png" alt="Equation 7" />.</p>
+<p>The function <b>f(a)</b> simply takes the probability function and probability distribution function and returns their product.</p>
+
+<!-- <p>Spreading or flattening the histogram makes the dark pixels appear darker and the light pixels appear lighter. If,however, the pixels that are only slightly lighter become much lighter, then the dark pixels will appear darker.</p>
+<ul>
+    <li>Let "c" be an image with a poor histogram.</li>
+	<li>Let "b" be an image with flat histogram. </li>
+	<li>Let "f" be the yet unknown function that transforms the image "c" into an image "b" with a flat histogram.</li>
+    <li><img src="equation1.png" alt="Equation 1"></li>
+</ul>	
+<p></p> -->
+	
+
+</body>
+</html>

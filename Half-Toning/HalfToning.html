@@ -1,0 +1,456 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE></TITLE>
+	<META NAME="GENERATOR" CONTENT="LibreOffice 4.0.5.2 (Linux)">
+	<META NAME="CREATED" CONTENT="20140802;17565800">
+	<META NAME="CHANGED" CONTENT="20140802;23262100">
+	<STYLE TYPE="text/css">
+	<!--
+		@page { size: 8.5in 11in; margin: 0.79in }
+		P { margin-bottom: 0.08in; direction: ltr; color: #000000; widows: 0; orphans: 0 }
+		P.western { font-family: "DejaVu Sans Condensed", serif; font-size: 12pt; so-language: en-US }
+		P.cjk { font-family: "DejaVu Sans Condensed"; font-size: 12pt; so-language: zxx }
+		P.ctl { font-family: "DejaVu Sans Condensed"; font-size: 12pt; so-language: zxx }
+		PRE { direction: ltr; color: #000000; widows: 0; orphans: 0 }
+		PRE.western { so-language: en-US }
+		PRE.cjk { so-language: zxx }
+		PRE.ctl { so-language: zxx }
+		TD P { margin-bottom: 0in; direction: ltr; color: #000000; widows: 0; orphans: 0 }
+		TD P.western { font-family: "DejaVu Sans Condensed", serif; font-size: 12pt; so-language: en-US }
+		TD P.cjk { font-family: "DejaVu Sans Condensed"; font-size: 12pt; so-language: zxx }
+		TD P.ctl { font-family: "DejaVu Sans Condensed"; font-size: 12pt; so-language: zxx }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="en-US" TEXT="#000000" DIR="LTR">
+<PRE CLASS="western"># Half toning algorithm with linear error distribution 
+# An elaboration by, Sohail Qayum Malik[<FONT COLOR="#000080"><U><A HREF="mailto:sqm@hackers.pk">sqm@hackers.pk</A></U></FONT>]
+# Last updated, 3<SUP>rd</SUP> of August, 2014.
+
+# Refer to chapter 3 of book ....
+# Image Processing in C by, Dwayne Phillips
+
+/* 
+<FONT SIZE=3><U><B>Error distribution function.</B></U></FONT>
+The elements in C must add up to 1. 
+The size of the C and the values at 
+each location were set through trial and 
+error for the best results. 
+This is not an optimal error distribution, 
+there is a room for improvement(as always).   
+
+float c[2][3];
+
+      c[0][0] = 0.0;
+      c[0][1] = 0.2;
+      c[0][2] = 0.0;
+      c[1][0] = 0.6;
+      c[1][1] = 0.1;
+      c[1][2] = 0.1;
+*/
+</PRE><P CLASS="western" STYLE="margin-bottom: 0in">
+/*</P>
+<PRE CLASS="western"><FONT SIZE=3><U><B>Threshold</B></U></FONT>, 
+Usually set to half the number of available gray shades. For an image with 256 gray shades, set threshold at 128. */
+
+
+/*
+<FONT SIZE=4><U><B>E</B></U></FONT><FONT SIZE=3><U><B>p(</B></U></FONT><FONT SIZE=3><U><SPAN STYLE="font-weight: normal">Propagated Error)</SPAN></U></FONT></PRE><P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">
+<FONT FACE="NQSJYE+CMTT12"><FONT SIZE=3><SPAN STYLE="text-decoration: none"><SPAN STYLE="font-weight: normal">Sum
+of the errors propagated to position (m,n) due </SPAN></SPAN></FONT></FONT><FONT FACE="NQSJYE+CMTT12"><FONT SIZE=3><SPAN STYLE="text-decoration: none">to
+prior assignments of generated errors.</SPAN></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in; text-decoration: none">
+<FONT FACE="NQSJYE+CMTT12"><FONT SIZE=3>During the very first
+iteration, there are no previously generated errors so sum of the
+errors propagated to position (m,n) is zero as well.</FONT></FONT></P>
+<PRE CLASS="western">*/
+
+
+/*
+<FONT SIZE=4><U><B>E</B></U></FONT><FONT SIZE=3><U><B>g(</B></U></FONT><FONT SIZE=3><U><SPAN STYLE="font-weight: normal">Generated Error)</SPAN></U></FONT></PRE><P CLASS="western" STYLE="margin-bottom: 0in; font-weight: normal; text-decoration: none">
+<FONT FACE="NQSJYE+CMTT12"><FONT SIZE=3>The total error generated at
+position (m,n).</FONT></FONT></P>
+<PRE CLASS="western" STYLE="font-weight: normal; text-decoration: none"><FONT SIZE=3>*/</FONT>
+
+/* <FONT COLOR="#008080"><FONT SIZE=4><B>Dry run for a pixel at (1,1)</B></FONT></FONT> */  
+# The image has a resolution of 3x3(Rows = 3, Columns = 3)
+#---------------------------------------------------------
+
+# Predicates are...
+# if ( xx &lt; 0 ){ xx = 0; } &amp;&amp; if ( xx &gt;= rows ){ xx = rows -1; }
+# if ( yy &lt; 0 ){ yy = 0; } &amp;&amp; if ( yy &gt;= cols ){ yy = cols -1; }
+
+for m = 0 to Rows – 1 <FONT SIZE=4><B>{</B></FONT>
+   for n = 0 to columns – 1 <FONT SIZE=4><B>{</B></FONT>
+
+      <FONT COLOR="#ff0000"><FONT SIZE=3><B>sum_p = 0.0;</B></FONT></FONT>
+
+      <FONT SIZE=3><B>if ( (m,n) = (1,1) ) {</B></FONT>
+         <FONT COLOR="#0000ff"><B>i &lt;- [0 ... 1]</B></FONT> // For each row of error distribution function array
+         <FONT COLOR="#0000ff"><B>j &lt;- [0 ... 2]</B></FONT>  // For each column of each row of error distribution function array
+               xx = (m(1) - i(0) + 1) = 2; yy = (n(1) - j(0) + 1) = 2;
+               <FONT COLOR="#0000ff"><B>xx = 2, yy = 2</B></FONT>(After predicates)
+               <FONT COLOR="#ff0000"><FONT SIZE=3><B>sum_p = sum_p + c[i=0][j=0] * Eg[xx=2][yy=2];</B></FONT></FONT>
+               xx = (m(1) - i(0) + 1) = 2; yy = (n(1) - j(1) + 1) = 1;
+               <FONT COLOR="#0000ff"><B>xx = 2, yy = 1</B></FONT>(After predicates)
+               <FONT COLOR="#ff0000"><FONT SIZE=3><B>sum_p = sum_p + c[i=0][j=1] * Eg[xx=2][yy=1];</B></FONT></FONT>
+               xx = (m(1) - i(0) + 1) = 2; yy = (n(1) - j(2) + 1) = 0;
+               <FONT COLOR="#0000ff"><B>xx = 2, yy = 0</B></FONT>(After predicates)
+               <FONT COLOR="#ff0000"><FONT SIZE=3><B>sum_p = sum_p + c[i=0][j=2] * Eg[xx=2][yy=0];</B></FONT></FONT>
+               xx = (m(1) - i(1) + 1) = 1; yy = (n(1) - j(0) + 1) = 2;
+               <FONT COLOR="#0000ff"><B>xx = 1, yy = 2</B></FONT>(After predicates)
+               <FONT COLOR="#ff0000"><FONT SIZE=3><B>sum_p = sum_p + c[i=1][j=0] * Eg[xx=1][yy=2];</B></FONT></FONT>
+               xx = (m(1) - i(1) + 1) = 1; yy = (n(1) - j(1) + 1) = 1
+               <FONT COLOR="#0000ff"><B>xx = 1, yy = 1</B></FONT>(After predicates)
+               <FONT COLOR="#ff0000"><FONT SIZE=3><B>sum_p = sum_p + c[i=1][j=1] * Eg[xx=1][yy=1];</B></FONT></FONT>
+               xx = (m(1) - i(1) + 1) = 1; yy = (n(1) - j(2) + 1) = 0
+               <FONT COLOR="#0000ff"><B>xx = 1, yy = 0</B></FONT>(After predicates)
+               <FONT COLOR="#ff0000"><FONT SIZE=3><B>sum_p = sum_p + c[i=1][j=2] * Eg[xx=1][yy=0];</B></FONT></FONT>
+      <FONT SIZE=3><B>}</B></FONT>
+
+     <FONT SIZE=3><B>Ep[m=1][n=1] = sum_p;</B></FONT>
+     <FONT SIZE=3><B>t = in_image[m=1][n=1] + Ep[m=1][n=1];  </B></FONT>
+
+     <FONT SIZE=3><B>if ( t &gt; threshold ) {</B></FONT>
+
+        <FONT SIZE=3><B>Eg[m=1][n=1] = t – 2*threshold;</B></FONT>
+        <FONT SIZE=3><B>out_image[m=1][n=1] = one;</B></FONT>
+     <FONT SIZE=3><B>}</B></FONT>
+     <FONT SIZE=3><B>else if ( t &lt;= threshold ) {</B></FONT>
+
+        <FONT SIZE=3><B>Eg[m=1][n=1] = t;</B></FONT>
+        <FONT SIZE=3><B>out_image[m=1][n=1] = zero;</B></FONT>
+     <FONT SIZE=3><B>}</B></FONT>
+   <FONT SIZE=4><B>} // End for n</B></FONT>     
+<FONT SIZE=4><B>} // End for m</B></FONT>
+
+
+/* 
+  For a 3x3 image the Ep[3][3], Eg[3][3], for pixel(m=1, n=1) how the new value of sum_p(sum of error propagated) gets calculated. 
+*/
+
+ /* Eg[3][3] when m=1, n=1 */</PRE>
+<TABLE WIDTH=638 CELLPADDING=4 CELLSPACING=0>
+	<COL WIDTH=56>
+	<COL WIDTH=178>
+	<COL WIDTH=184>
+	<COL WIDTH=186>
+	<TR VALIGN=TOP>
+		<TD ROWSPAN=3 WIDTH=56 HEIGHT=13 STYLE="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0.04in; padding-bottom: 0.04in; padding-left: 0.04in; padding-right: 0in">
+			<P CLASS="western" ALIGN=CENTER><BR>
+			</P>
+			<P CLASS="western" ALIGN=CENTER><BR>
+			</P>
+			<P CLASS="western" ALIGN=CENTER><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>sum_p
+			=</FONT></FONT></P>
+		</TD>
+		<TD WIDTH=178 STYLE="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0.04in; padding-bottom: 0.04in; padding-left: 0.04in; padding-right: 0in">
+			<P CLASS="western"><BR>
+			</P>
+		</TD>
+		<TD WIDTH=184 STYLE="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0.04in; padding-bottom: 0.04in; padding-left: 0.04in; padding-right: 0in">
+			<P CLASS="western"><BR>
+			</P>
+		</TD>
+		<TD WIDTH=186 STYLE="border: 1px solid #000000; padding: 0.04in">
+			<P CLASS="western"><BR>
+			</P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=178 STYLE="border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0in; padding-bottom: 0.04in; padding-left: 0.04in; padding-right: 0in">
+			<P CLASS="western"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>(c[1][2]=</FONT></FONT><FONT COLOR="#ff0000"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=3><B>0.1</B></FONT></FONT></FONT><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>)*Eg[1][0]</FONT></FONT></P>
+		</TD>
+		<TD WIDTH=184 STYLE="border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0in; padding-bottom: 0.04in; padding-left: 0.04in; padding-right: 0in">
+			<P CLASS="western" ALIGN=JUSTIFY><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>(c[1][1]=</FONT></FONT><FONT COLOR="#ff0000"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=3><B>0.1</B></FONT></FONT></FONT><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>)*Eg[1][1]</FONT></FONT></P>
+		</TD>
+		<TD WIDTH=186 STYLE="border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0in; padding-bottom: 0.04in; padding-left: 0.04in; padding-right: 0.04in">
+			<P CLASS="western"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>(c[1][0]=</FONT></FONT><FONT COLOR="#ff0000"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=3><B>0.6</B></FONT></FONT></FONT><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>)*Eg[1][2]</FONT></FONT></P>
+		</TD>
+	</TR>
+	<TR VALIGN=TOP>
+		<TD WIDTH=178 STYLE="border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0in; padding-bottom: 0.04in; padding-left: 0.04in; padding-right: 0in">
+			<P CLASS="western"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>(c[0][2]=</FONT></FONT><FONT COLOR="#ff0000"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=3><B>0.0</B></FONT></FONT></FONT><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>)*Eg[2][0]</FONT></FONT></P>
+		</TD>
+		<TD WIDTH=184 STYLE="border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: none; padding-top: 0in; padding-bottom: 0.04in; padding-left: 0.04in; padding-right: 0in">
+			<P CLASS="western"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>(c[0][1]=</FONT></FONT><FONT COLOR="#ff0000"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=3><B>0.2</B></FONT></FONT></FONT><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>)*Eg[2][1]</FONT></FONT></P>
+		</TD>
+		<TD WIDTH=186 STYLE="border-top: none; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000; padding-top: 0in; padding-bottom: 0.04in; padding-left: 0.04in; padding-right: 0.04in">
+			<P CLASS="western"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>(c[0][0]=</FONT></FONT><FONT COLOR="#ff0000"><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=3><B>0.0</B></FONT></FONT></FONT><FONT FACE="DejaVu Sans Mono, monospace"><FONT SIZE=2>)*Eg[2][2]</FONT></FONT></P>
+		</TD>
+	</TR>
+</TABLE>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" STYLE="margin-bottom: 0in"># <FONT COLOR="#198a8a"><FONT SIZE=4><B>Implementation
+in C</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>/*********************************************</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=4>half_tone(...</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Ep[m][n] =
+sum of erros propogated</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>to position
+(m,n).</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Eg[m][n] =
+total error generated at</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>location
+(m,n).</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>**********************************************/</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=4><B>half_tone</B></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>(</B></FONT></FONT><FONT COLOR="#0000ff"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>short</B></FONT></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>**
+in_image, </B></FONT></FONT><FONT COLOR="#0000ff"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>short</B></FONT></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>**
+ out_image,  </B></FONT></FONT><FONT COLOR="#0000ff"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>short</B></FONT></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>
+threshold, </B></FONT></FONT><FONT COLOR="#0000ff"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>short
+</B></FONT></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>one,
+</B></FONT></FONT><FONT COLOR="#0000ff"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>short</B></FONT></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>
+zero, </B></FONT></FONT><FONT COLOR="#0000ff"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>long</B></FONT></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>
+rows, </B></FONT></FONT><FONT COLOR="#0000ff"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>long</B></FONT></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>
+cols) </B></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=4><B>{</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT COLOR="#0000ff"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>float</B></FONT></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>
+**Eg, **Ep;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT COLOR="#0000ff"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>float</B></FONT></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>
+c[2][3], sum_p, t;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT COLOR="#0000ff"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>int</B></FONT></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>
+i, j, m, n, xx, yy;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>c[0][0]
+= 0.0;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>c[0][1]
+= 0.2;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>c[0][2]
+= 0.0;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>c[1][0]
+= 0.6;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>c[1][1]
+= 0.1;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>c[1][2]
+= 0.1;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>/***********************************************</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Calculate
+the total propogated error</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>at
+location(m,n) due to prior</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>assignment.</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Go through
+the input image. If the output</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>should be
+one then display that pixel as such.</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>If the
+output should be zero then display it</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>that way</B></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>.</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Also set the
+pixels in the input image array</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+t</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>o 1's and
+0's in case the print option</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>was chosen.</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>************************************************/</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Eg
+= malloc(rows * sizeof(float *));</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>for
+(i=0; i&lt;rows; i++) {</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">        
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Eg[i] = malloc(cols *
+sizeof(float ));</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">        <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>if
+(Eg[i] == '\0') {</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">           
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>printf(&quot;\n\tmalloc of
+Eg[%d] failed&quot;, i);</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">        <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>}
+/* ends if */</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>}
+/* ends loop over i */</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Ep
+= malloc(rows * sizeof(float *));</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>for
+(i=0; i&lt;rows; i++) {</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">        
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Ep[i] = malloc(cols *
+sizeof(float ));</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">         <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>if
+(Ep[i] == '\0') {</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>printf(&quot;\n\tmalloc of
+Ep[%d] failed&quot;, i);</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">         <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>}
+/* ends if */</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>}
+/* ends loop over i */</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>for
+(i=0; i&lt;rows; i++) {</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">         <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>for
+(j=0; j&lt;cols; j++) {</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Eg[i][j] = 0.0;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Ep[i][j] = 0.0;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">         <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>}</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>}</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>/**********************************************</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+29 February 1988 - Fix to remove a solid</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+line at the bottom of each region. Loop</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+over ROWS-1 and then draw an extra line.</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>**********************************************/</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>f</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>or
+(m=0; m&lt;rows; m++) {</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">         <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>for
+(n=0; n&lt;cols; n++) {</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>sum_p = 0.0;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>for (i=0; i&lt;2; i++) {</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+    <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>for (j=0; j&lt;3; j++)
+{</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+        <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>xx = m-i+1;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+        <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>yy = n-j+1;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+        <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>if (xx &lt; 0) xx
+= 0;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+        <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>if (xx &gt;= rows)
+xx = rows-1;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+        <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>if (yy &lt; 0) yy
+= 0;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+        <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>if (yy &gt;= cols)
+yy = cols-1;   </B></FONT></FONT>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+        <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>sum_p = sum_p +
+c[i][j] * Eg[xx][yy];</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+    <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>} /* ends loop over j
+*/</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>} /* ends loop over i */</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Ep[m][n] = sum_p;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>t = in_image[m][n] +
+Ep[m][n];</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>/**********************************</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+              </FONT></FONT>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Here set the
+point [m][n]=one</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>***********************************/</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>i</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>f
+(t &gt; threshold) {</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+   <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Eg[m][n] = t -
+threshold*2;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+   <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>out_image[m][n] = one;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>} </B></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><SPAN STYLE="font-weight: normal">/*
+ends if t &gt; threshold */</SPAN></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>/**********************************</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*
+</FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Here set the
+point [m][n]=zero</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>*</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2>***********************************/</FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>else { </B></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><SPAN STYLE="font-weight: normal">/*
+t &lt;= threshold */</SPAN></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+    <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>Eg[m][n] = t;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+   <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>out_image[m][n] = zero;</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">            
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>} </B></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><SPAN STYLE="font-weight: normal">/*
+ends else t &lt;= threshold */</SPAN></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">         <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>}
+</B></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><SPAN STYLE="font-weight: normal">/*
+ends loop over n columns */</SPAN></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>}</B></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><SPAN STYLE="font-weight: normal">
+/* ends loop over m rows */</SPAN></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>for
+(i=0; i&lt;rows; i++){</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">        
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>free(Eg[i]);</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">        
+<FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>free(Ep[i]);</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">     <FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>}</B></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=4><B>}</B></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><B>
+</B></FONT></FONT><FONT FACE="JEFEXO+CMTT10"><FONT SIZE=2><SPAN STYLE="font-weight: normal">/*
+ends half_tone */</SPAN></FONT></FONT></P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in">   
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+<P CLASS="western" ALIGN=LEFT STYLE="margin-bottom: 0in"><BR>
+</P>
+</BODY>
+</HTML>
