@@ -6,8 +6,9 @@ using System.IO;
 using System.Windows.Media.Imaging;
 
 /* 
-    C/C++ Uesr Journal archive
-	http://collaboration.cmc.ec.gc.ca/science/rpn/biblio/ddj/Website/articles/CUJ/1990/
+    C/C++ Users Journal archive
+	http://collaboration.cmc.ec.gc.ca/science/rpn/biblio/ddj/Website/articles/CUJ/1990/9008/faler/faler.htm
+	Image Processing in C by, Dwayne Phillips
  */
 
 namespace edge.detection
@@ -79,20 +80,30 @@ namespace edge.detection
 					/* https://msdn.microsoft.com/en-us/library/system.windows.media.pixelformat%28v=vs.110%29.aspx */
 					if (bitmapSource.Format.ToString() == "Gray8")
 					{
-						byte[] pixels = new byte[bitmapSource.PixelWidth*bitmapSource.PixelHeight];                        
-						bitmapSource.CopyPixels(pixels, bitmapSource.PixelWidth, 0);
+						byte[] image = new byte[bitmapSource.PixelWidth*bitmapSource.PixelHeight];                        
+						/* image after convolution */
+						byte[] pixels = new byte[bitmapSource.PixelWidth*bitmapSource.PixelHeight];
+						bitmapSource.CopyPixels(image, bitmapSource.PixelWidth, 0);
+						convolution(ref kirsch, ref image, ref pixels, bitmapSource.PixelWidth, bitmapSource.PixelHeight);
+						if (arguments.Length >= 3)
+						{
+						    save(arguments[2], ref pixels, bitmapSource.PixelWidth, bitmapSource.PixelHeight, bitmapSource.DpiX, bitmapSource.DpiY, bitmapSource.Format, bitmapSource.Palette);
+                        }
+                        else
+						{
+							save("convoluted.tif", ref pixels, bitmapSource.PixelWidth, bitmapSource.PixelHeight, bitmapSource.DpiX, bitmapSource.DpiY, bitmapSource.Format, bitmapSource.Palette);
+						}
 					}
 				}
 				catch (FileNotFoundException ex)
 				{
 					/* :) */
                     Console.WriteLine("Some thing exceptional happened");					
-				}
-                convolution(ref kirsch);			
+				}                
 			}
 			else 
 			{
-				Console.WriteLine("Usage... C:\\> " + arguments[0] + " image.tif");
+				Console.WriteLine("Usage... C:\\> " + arguments[0] + " source.tif [target.tif]");
 			}
 						
 			return 0;
@@ -105,7 +116,7 @@ namespace edge.detection
 		   producing a third function that is typically viewed as a modified version of one of the 
 		   original functions
 		 */
-        public static void convolution(ref int[,,] k)
+        public static void convolution(ref int[,,] k, ref byte[] image, ref byte[] pixels, int width, int height)
 		{
             /*
 			    k.Rank returns number of dimension since k is 3 dimensional it'll return 3
@@ -114,6 +125,53 @@ namespace edge.detection
                 return 3
                 Perils of Managed Code... internally lot of table lookups should be happening 				
 			*/
-		}		
+			
+			int i, j;
+            for (i = 1; i < height - 1; i++)
+			{
+				for (j = 1; j < width - 1; j++)
+				{
+			       int mask;
+				   
+				   pixels[i*width + j] = 0;
+				   
+				   for (mask = 0; mask < k.GetLength(0); mask++) 
+				   {
+					   int row, column, sum = 0; 
+					   for (row = -1; row < k.GetLength(1) - 1; row++)
+					   {
+						   for (column = -1; column < k.GetLength(2) - 1; column++)
+						   {
+							   sum = sum + image[(i+row)*width + (j+column)]*k[mask, row + 1, column + 1];							   
+						   }
+					   }
+					   
+					   if (sum > 255)
+					   {
+						   sum = 255;
+					   }
+					   else if (sum < 0)
+					   {
+						   sum = 0;
+					   }
+						   					   
+					   if (sum > pixels[i*width + j])
+					   {
+						   pixels[i*width + j] = (byte)sum;  
+					   }
+				   }									
+				}
+			}				
+		}
+
+		static void save(String path, ref byte[] pixels, int width, int height, double DpiX, double DpiY, System.Windows.Media.PixelFormat Format, BitmapPalette Palette)
+		{
+			BitmapSource image = BitmapSource.Create(width, height, DpiX, DpiY, Format, Palette, pixels, width);
+            FileStream stream = new FileStream(path, FileMode.Create);	
+			TiffBitmapEncoder encoder = new TiffBitmapEncoder();
+			encoder.Frames.Add(BitmapFrame.Create(image));
+		    encoder.Save(stream);
+		}
+		
 	}
 }	
